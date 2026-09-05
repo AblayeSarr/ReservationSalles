@@ -63,3 +63,31 @@ Cette organisation permet de centraliser la configuration et d'éviter de répé
 * **Lisibilité :** le code est généralement plus proche du modèle métier de l'application.
 
 
+## Étape 3 — Modèles Eloquent
+
+### 1. Quel type de relation Eloquent existe entre Salle et Reservation ?
+
+La relation entre `Salle` et `Reservation` est une relation **un-à-plusieurs**.
+Une salle peut avoir plusieurs réservations. Le modèle `Salle` possède donc plusieurs `Reservation`.
+À l'inverse, une réservation appartient à une seule salle.
+On utilise donc une relation `hasMany` du côté de `Salle` et une relation `belongsTo` du côté de `Reservation`.
+
+### 2. Pourquoi utiliser `$fillable` ou `$guarded` ?
+
+`$fillable` et `$guarded` permettent de contrôler les attributs qui peuvent être remplis automatiquement lors d'une affectation de masse.
+Cela permet d'éviter qu'un utilisateur puisse modifier certains champs sensibles ou techniques du modèle.
+Dans notre projet, nous avons choisi `$fillable` afin de définir explicitement les champs que nous autorisons à être remplis.
+
+### 3. Pourquoi caster `active` en booléen ?
+
+La colonne `active` indique si une salle est active ou non. Elle représente donc une valeur vrai/faux.
+Le cast en booléen permet à Eloquent de convertir automatiquement la valeur provenant de la base de données en un véritable booléen PHP.
+Cela rend la manipulation de cette donnée plus cohérente avec sa signification métier.
+
+### 4. Pourquoi convertir les dates en objets ?
+
+Les champs `date_debut` et `date_fin` représentent des dates et des heures.
+Les convertir en objets de date permet de les manipuler et de les comparer plus facilement qu'avec de simples chaînes de caractères.
+Cette conversion sera particulièrement utile pour appliquer les règles métier des réservations, notamment vérifier que la date de début est avant la date de fin, que la réservation commence dans le futur et qu'il n'existe pas de chevauchement avec une autre réservation.
+
+

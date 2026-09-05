@@ -111,3 +111,77 @@ Si elle existe, le script ne la crée pas. Sinon, il l'ajoute à la base de donn
 Cette vérification permet d'exécuter plusieurs fois `database/seed.php` sans créer de doublons.
 
 
+## Étape 5 — Validation
+
+### 1. Pourquoi valider les données avant de les utiliser ?
+
+La validation permet de vérifier que les données reçues respectent les règles attendues avant de les utiliser dans l'application.
+Elle permet d'éviter les données invalides, incomplètes ou mal typées et de réduire les risques d'erreurs lors du traitement ou de l'enregistrement en base de données.
+
+### 2. Pourquoi utiliser Respect\Validation ?
+
+Respect\Validation fournit des règles de validation déjà prêtes à l'emploi.
+Cela évite de réécrire manuellement les mêmes contrôles et permet d'avoir une validation plus claire, centralisée et facilement maintenable.
+
+### 3. Pourquoi ne pas mettre toute la validation dans le contrôleur ?
+
+Mettre toute la validation dans le contrôleur rendrait celui-ci trop volumineux et mélangerait plusieurs responsabilités.
+Une classe dédiée comme `SalleValidator` ou `ReservationValidator` permet de séparer la validation du traitement HTTP et de rendre le code plus facile à tester et à maintenir.
+
+### 4. Quelle différence existe entre validation et règle métier ?
+
+La validation vérifie principalement que les données reçues respectent un format ou une contrainte attendue.
+Une règle métier concerne le comportement fonctionnel de l'application.
+Par exemple, vérifier qu'un email est valide relève de la validation, tandis que vérifier qu'une salle n'est pas déjà réservée sur le même créneau relève d'une règle métier.
+
+## Étape 6 — DTO
+
+### 1. Quelle différence existe entre un DTO et un modèle Eloquent ?
+
+Un DTO (Data Transfer Object) sert à transporter des données structurées entre différentes couches de l'application.
+Un modèle Eloquent représente une donnée persistée en base de données et permet également d'utiliser les fonctionnalités de l'ORM.
+Le DTO sert donc au transport des données, tandis que le modèle Eloquent sert notamment à représenter et manipuler les données persistées.
+
+### 2. Pourquoi le DTO ne doit-il pas appeler `save()` ?
+
+Le DTO ne doit pas appeler `save()` car il ne doit pas connaître la base de données ni la manière dont les données sont persistées.
+Son rôle est uniquement de transporter des données correctement typées.
+La responsabilité de l'enregistrement appartient au Repository.
+
+### 3. À quel moment transforme-t-on les chaînes en dates ?
+
+Les dates reçues depuis HTTP sont initialement des chaînes de caractères.
+Après leur validation, elles sont transformées en objets `DateTimeImmutable` lors de la création du DTO.
+Le reste de l'application peut ainsi manipuler directement des objets de date plutôt que des chaînes.
+
+### 4. Le DTO doit-il contenir la règle de chevauchement ?
+
+Non.
+Le chevauchement est une règle métier concernant les réservations.
+Le DTO doit uniquement transporter les données nécessaires à la réservation. La vérification du chevauchement appartient au service métier.
+
+## Étape 7 — Repository
+
+### 1. Eloquent constitue-t-il déjà un accès aux données ?
+
+Oui.
+Eloquent fournit déjà des fonctionnalités permettant de rechercher, créer, modifier et supprimer des données en base de données.
+Les modèles Eloquent constituent donc déjà une forme d'accès aux données.
+
+### 2. Pourquoi ajouter un Repository au-dessus d'Eloquent ?
+
+Le Repository permet d'isoler l'accès aux données du reste de l'application.
+Les contrôleurs et les services n'ont ainsi pas besoin de connaître directement les requêtes Eloquent utilisées pour récupérer ou modifier les données.
+Cela permet également de centraliser les requêtes liées à une même entité.
+
+### 3. Cette abstraction est-elle toujours nécessaire ?
+
+Non.
+Pour une petite application très simple, utiliser directement Eloquent peut être suffisant.
+Dans notre projet, cette abstraction est cependant pertinente car l'architecture demandée impose une séparation entre la logique métier et l'accès aux données.
+
+### 4. Quel avantage apporte-t-elle ?
+
+Le Repository réduit le couplage entre l'application et Eloquent.
+Grâce aux interfaces `SalleRepositoryInterface` et `ReservationRepositoryInterface`, les services peuvent dépendre d'un contrat plutôt que d'une implémentation précise.
+Cela facilite également les tests, car on peut remplacer le Repository réel par une implémentation en mémoire ou un double de test.

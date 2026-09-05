@@ -91,3 +91,23 @@ Les convertir en objets de date permet de les manipuler et de les comparer plus 
 Cette conversion sera particulièrement utile pour appliquer les règles métier des réservations, notamment vérifier que la date de début est avant la date de fin, que la réservation commence dans le futur et qu'il n'existe pas de chevauchement avec une autre réservation.
 
 
+## Étape 4 — Questions théoriques
+
+### 1. Quelle différence entre une migration et un seeder ?
+
+Une migration sert à créer ou modifier la **structure de la base de données** : tables, colonnes, clés étrangères, contraintes, etc.
+Un seeder sert à insérer des **données initiales** ou des données de démonstration dans les tables.
+Dans ce projet, les migrations créent les tables `salles` et `reservations`, tandis que `database/seed.php` ajoute les salles initiales.
+
+### 2. Pourquoi les données initiales doivent-elles être reproductibles ?
+
+Les données initiales doivent être reproductibles afin de pouvoir exécuter le script plusieurs fois, notamment lors de l'installation ou du développement, sans provoquer d'erreurs ni créer plusieurs fois les mêmes données.
+Un seed reproductible permet donc de retrouver un état initial cohérent de la base de données.
+
+### 3. Comment éviter les doublons ?
+
+Avant de créer une salle, le script vérifie si une salle ayant déjà le même **nom et le même bâtiment** existe.
+Si elle existe, le script ne la crée pas. Sinon, il l'ajoute à la base de données.
+Cette vérification permet d'exécuter plusieurs fois `database/seed.php` sans créer de doublons.
+
+

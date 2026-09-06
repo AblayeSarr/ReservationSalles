@@ -4,8 +4,18 @@ namespace App\Repository;
 
 use App\Model\Reservation;
 
-class ReservationRepository
+class ReservationRepository implements ReservationRepositoryInterface
 {
+    public function findAll(): array
+    {
+        return Reservation::query()->get()->all();
+    }
+
+    public function findById(int $id): ?Reservation
+    {
+        return Reservation::find($id);
+    }
+
     public function findOverlapping(
         int $salleId,
         \DateTimeInterface $dateDebut,
@@ -21,6 +31,14 @@ class ReservationRepository
 
     public function save(Reservation $reservation): Reservation
     {
+        $reservation->save();
+
+        return $reservation;
+    }
+
+    public function cancel(Reservation $reservation): Reservation
+    {
+        $reservation->statut = 'annulée';
         $reservation->save();
 
         return $reservation;

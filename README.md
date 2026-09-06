@@ -185,3 +185,32 @@ Dans notre projet, cette abstraction est cependant pertinente car l'architecture
 Le Repository réduit le couplage entre l'application et Eloquent.
 Grâce aux interfaces `SalleRepositoryInterface` et `ReservationRepositoryInterface`, les services peuvent dépendre d'un contrat plutôt que d'une implémentation précise.
 Cela facilite également les tests, car on peut remplacer le Repository réel par une implémentation en mémoire ou un double de test.
+
+
+# Étape 8 — Questions
+
+## 1. Pourquoi ces règles ne sont-elles pas dans le contrôleur ?
+
+Les règles métier ne sont pas placées dans le contrôleur car le contrôleur doit principalement gérer les requêtes HTTP et transmettre les données au service.
+Les règles métier sont placées dans le service afin de centraliser la logique de l’application, éviter les répétitions et faciliter la maintenance et les tests.
+Cette séparation permet également de respecter le principe de responsabilité unique.
+
+## 2. Pourquoi le service dépend-il d’une interface de Repository ?
+
+Le service dépend d’une interface de Repository afin de ne pas être directement lié à une technologie ou à une implémentation particulière.
+Cette approche permet de séparer la logique métier de l’accès aux données.
+Elle facilite également les tests, car le Repository réel peut être remplacé par un faux Repository lors des tests.
+Cette organisation respecte notamment le principe d’inversion des dépendances de SOLID.
+
+## 3. Quelle exception doit être levée en cas de conflit ?
+
+En cas de conflit de réservation, l’exception à lever est l’exception indiquant que la salle est indisponible.
+Elle permet de signaler clairement que la salle est déjà réservée sur le créneau demandé et qu’une nouvelle réservation ne peut donc pas être créée.
+Les réservations annulées ne doivent plus empêcher une nouvelle réservation.
+
+## 4. Comment tester le service sans MySQL ?
+
+Le service peut être testé sans MySQL en utilisant des mocks ou des stubs à la place des véritables repositories.
+Ces faux repositories permettent de simuler différentes situations : une salle inexistante, une salle inactive, un créneau déjà occupé ou encore une réservation valide.
+Cette méthode permet de tester uniquement la logique métier du service, sans dépendre d’une base de données réelle.
+Cela rend les tests plus rapides, plus simples et plus faciles à contrôler.

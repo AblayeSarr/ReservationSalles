@@ -21,8 +21,6 @@ class CreerSalleDTO
         $this->batiment = $batiment;
         $this->capacite = $capacite;
         $this->type = $type;
-        $this->capacite = $capacite;
-        $this->type = $type;
         $this->active = $active;
     }
 

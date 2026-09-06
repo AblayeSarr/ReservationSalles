@@ -16,22 +16,25 @@ class ReservationValidator implements ValidatorInterface
 
     public function __construct()
     {
-        $this->salleIdValidator = v::intType()
+        $this->salleIdValidator = v::stringType()
+            ->notEmpty()
+            ->digit()
             ->positive();
 
         $this->responsableValidator = v::stringType()
             ->notEmpty()
-            ->length(2, 120);
+            ->length(2, 100);
 
         $this->emailValidator = v::email();
 
         $this->motifValidator = v::stringType()
-            ->notEmpty()
             ->length(5, 255);
 
-        $this->dateDebutValidator = v::dateTime();
+        $this->dateDebutValidator = v::stringType()
+            ->notEmpty();
 
-        $this->dateFinValidator = v::dateTime();
+        $this->dateFinValidator = v::stringType()
+            ->notEmpty();
     }
 
     public function validate(array $data): ValidationResult
@@ -66,6 +69,10 @@ class ReservationValidator implements ValidatorInterface
                     $exception->getMessage()
                 ];
             }
+        }
+
+        if (!isset($errors['salle_id'])) {
+            $acceptedData['salle_id'] = (int) $acceptedData['salle_id'];
         }
 
         return new ValidationResult(

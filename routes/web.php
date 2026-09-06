@@ -3,7 +3,7 @@
 use FastRoute\RouteCollector;
 
 return function (RouteCollector $r): void {
-    $r->addRoute('GET', '/', 'Accueil');
+    $r->addRoute('GET', '/', 'HomeController::index');
 
     $r->addRoute('GET', '/salles', 'SalleController::index');
     $r->addRoute('GET', '/salles/create', 'SalleController::create');

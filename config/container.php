@@ -16,24 +16,18 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 use function DI\autowire;
 use function DI\factory;
 use function FastRoute\simpleDispatcher;
+use App\Factory\ReservationFactory;
+use App\Factory\ReservationFactoryInterface;
 
 return [
     SalleRepositoryInterface::class => autowire(SalleRepository::class),
-
     ReservationRepositoryInterface::class => autowire(ReservationRepository::class),
-
     SalleValidator::class => autowire(SalleValidator::class),
-
-    ReservationValidator::class => autowire(ReservationValidator::class),
-
+    ReservationFactoryInterface::class => autowire(ReservationFactory::class),
     CreerReservationService::class => autowire(CreerReservationService::class),
-
     AnnulerReservationService::class => autowire(AnnulerReservationService::class),
-
     SalleController::class => autowire(SalleController::class),
-
     ReservationController::class => autowire(ReservationController::class),
-
     Application::class => factory(
         function (
             Dispatcher $dispatcher,

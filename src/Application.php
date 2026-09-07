@@ -42,7 +42,6 @@ class Application
             http_response_code(405);
 
             $allowedMethods = $routeInfo[1];
-
             $allowed = implode(', ', $allowedMethods);
 
             header('Allow: ' . $allowed);
@@ -56,25 +55,35 @@ class Application
         }
 
         if ($routeInfo[0] === Dispatcher::FOUND) {
-            $handler = $routeInfo[1];
+            try {
+                $handler = $routeInfo[1];
+                $vars = $routeInfo[2];
 
-            $vars = $routeInfo[2];
+                [$controllerName, $method] = explode(
+                    '::',
+                    $handler,
+                    2
+                );
 
-            [$controllerName, $method] = explode(
-                '::',
-                $handler,
-                2
-            );
+                $controllerClass = 'App\\Controller\\' . $controllerName;
 
-            $controllerClass = 'App\\Controller\\' . $controllerName;
+                $controller = ($this->controllerResolver)(
+                    $controllerClass
+                );
 
-            $controller = ($this->controllerResolver)(
-                $controllerClass
-            );
+                $controller->$method(
+                    ...array_values($vars)
+                );
+            } catch (\Throwable $exception) {
+                http_response_code(500);
 
-            $controller->$method(
-                ...array_values($vars)
-            );
+                $title = '500 — Erreur interne';
+
+                $message = 'Une erreur interne est survenue. Veuillez réessayer plus tard.';
+
+                require dirname(__DIR__)
+                    . '/templates/error/500.php';
+            }
         }
     }
 }

@@ -44,8 +44,11 @@ class ReservationController
             }
         }
 
-        require dirname(__DIR__, 2)
-            . '/templates/reservation/index.php';
+        $this->render('reservation/index', [
+            'reservations' => $reservations,
+            'salles' => $salles,
+            'salleFilter' => $salleFilter,
+        ]);
     }
 
     public function create(): void
@@ -61,8 +64,12 @@ class ReservationController
         $errors = [];
         $globalError = null;
 
-        require dirname(__DIR__, 2)
-            . '/templates/reservation/form.php';
+        $this->render('reservation/form', [
+            'salles' => $salles,
+            'data' => $data,
+            'errors' => $errors,
+            'globalError' => $globalError,
+        ]);
     }
 
     public function store(): void
@@ -83,21 +90,25 @@ class ReservationController
 
             $globalError = null;
 
-            require dirname(__DIR__, 2)
-                . '/templates/reservation/form.php';
+            $this->render('reservation/form', [
+                'salles' => $salles,
+                'data' => $data,
+                'errors' => $errors,
+                'globalError' => $globalError,
+            ]);
 
             return;
         }
 
-        $data = $result->data();
+        $validatedData = $result->data();
 
         try {
             $dateDebut = new \DateTimeImmutable(
-                $data['date_debut']
+                $validatedData['date_debut']
             );
 
             $dateFin = new \DateTimeImmutable(
-                $data['date_fin']
+                $validatedData['date_fin']
             );
         } catch (\Exception $exception) {
             $errors = [
@@ -118,23 +129,29 @@ class ReservationController
 
             $globalError = null;
 
-            require dirname(__DIR__, 2)
-                . '/templates/reservation/form.php';
+            $this->render('reservation/form', [
+                'salles' => $salles,
+                'data' => $data,
+                'errors' => $errors,
+                'globalError' => $globalError,
+            ]);
 
             return;
         }
 
-        $dto = new CreerReservationDTO(
-            $data['salle_id'],
-            $data['responsable'],
-            $data['email'],
-            $data['motif'],
-            $dateDebut,
-            $dateFin
-        );
+        $dto = CreerReservationDTO::builder()
+            ->salleId($validatedData['salle_id'])
+            ->responsable($validatedData['responsable'])
+            ->email($validatedData['email'])
+            ->motif($validatedData['motif'])
+            ->dateDebut($dateDebut)
+            ->dateFin($dateFin)
+            ->build();
 
         try {
             $reservation = $this->creerReservationService->creer($dto);
+
+            $_SESSION['success'] = 'La réservation a été créée avec succès.';
 
             header(
                 'Location: /reservations/'
@@ -156,8 +173,12 @@ class ReservationController
                 }
             );
 
-            require dirname(__DIR__, 2)
-                . '/templates/reservation/form.php';
+            $this->render('reservation/form', [
+                'salles' => $salles,
+                'data' => $data,
+                'errors' => $errors,
+                'globalError' => $globalError,
+            ]);
 
             return;
         }
@@ -173,14 +194,17 @@ class ReservationController
             );
         }
 
-        require dirname(__DIR__, 2)
-            . '/templates/reservation/show.php';
+        $this->render('reservation/show', [
+            'reservation' => $reservation,
+        ]);
     }
 
     public function cancel(int $id): void
     {
         try {
             $this->annulerReservationService->annuler($id);
+
+            $_SESSION['success'] = 'La réservation a été annulée avec succès.';
 
             header('Location: /reservations');
 
@@ -191,8 +215,20 @@ class ReservationController
             $title = 'Réservation introuvable';
             $message = $exception->getMessage();
 
-            require dirname(__DIR__, 2)
-                . '/templates/error/404.php';
+            $this->render('error/404', [
+                'title' => $title,
+                'message' => $message,
+            ]);
         }
+    }
+
+    private function render(string $view, array $data = []): void
+    {
+        extract($data);
+
+        require dirname(__DIR__, 2)
+            . '/templates/'
+            . $view
+            . '.php';
     }
 }

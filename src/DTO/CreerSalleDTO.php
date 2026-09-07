@@ -10,6 +10,11 @@ class CreerSalleDTO
     private string $type;
     private bool $active;
 
+    public static function builder(): CreerSalleDTOBuilder
+    {
+        return new CreerSalleDTOBuilder();
+    }
+
     public function __construct(
         string $nom,
         string $batiment,

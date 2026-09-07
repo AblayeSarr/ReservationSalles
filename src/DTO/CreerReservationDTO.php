@@ -56,4 +56,9 @@ class CreerReservationDTO
     {
         return $this->dateFin;
     }
+
+    public static function builder(): CreerReservationDTOBuilder
+    {
+        return new CreerReservationDTOBuilder();
+    }
 }

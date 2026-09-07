@@ -19,7 +19,9 @@ class SalleController
     {
         $salles = $this->salleRepository->findAll();
 
-        require dirname(__DIR__, 2) . '/templates/salle/index.php';
+        $this->render('salle/index', [
+            'salles' => $salles,
+        ]);
     }
 
     public function show(int $id): void
@@ -29,12 +31,14 @@ class SalleController
         if ($salle === null) {
             http_response_code(404);
 
-            require dirname(__DIR__, 2) . '/templates/error/404.php';
+            $this->render('error/404');
 
             return;
         }
 
-        require dirname(__DIR__, 2) . '/templates/salle/show.php';
+        $this->render('salle/show', [
+            'salle' => $salle,
+        ]);
     }
 
     public function create(): void
@@ -43,7 +47,11 @@ class SalleController
         $errors = [];
         $mode = 'create';
 
-        require dirname(__DIR__, 2) . '/templates/salle/form.php';
+        $this->render('salle/form', [
+            'data' => $data,
+            'errors' => $errors,
+            'mode' => $mode,
+        ]);
     }
 
     public function store(): void
@@ -64,20 +72,24 @@ class SalleController
             $errors = $result->errors();
             $mode = 'create';
 
-            require dirname(__DIR__, 2) . '/templates/salle/form.php';
+            $this->render('salle/form', [
+                'data' => $data,
+                'errors' => $errors,
+                'mode' => $mode,
+            ]);
 
             return;
         }
 
         $validatedData = $result->data();
 
-        $dto = new CreerSalleDTO(
-            $validatedData['nom'],
-            $validatedData['batiment'],
-            $validatedData['capacite'],
-            $validatedData['type'],
-            $validatedData['active']
-        );
+        $dto = CreerSalleDTO::builder()
+            ->nom($validatedData['nom'])
+            ->batiment($validatedData['batiment'])
+            ->capacite($validatedData['capacite'])
+            ->type($validatedData['type'])
+            ->active($validatedData['active'])
+            ->build();
 
         $salle = new Salle();
 
@@ -88,6 +100,8 @@ class SalleController
         $salle->active = $dto->isActive();
 
         $salle = $this->salleRepository->save($salle);
+
+        $_SESSION['success'] = 'La salle a été créée avec succès.';
 
         header('Location: /salles/' . $salle->id);
 
@@ -101,7 +115,7 @@ class SalleController
         if ($salle === null) {
             http_response_code(404);
 
-            require dirname(__DIR__, 2) . '/templates/error/404.php';
+            $this->render('error/404');
 
             return;
         }
@@ -117,7 +131,11 @@ class SalleController
         $errors = [];
         $mode = 'edit';
 
-        require dirname(__DIR__, 2) . '/templates/salle/form.php';
+        $this->render('salle/form', [
+            'data' => $data,
+            'errors' => $errors,
+            'mode' => $mode,
+        ]);
     }
 
     public function update(int $id): void
@@ -127,7 +145,7 @@ class SalleController
         if ($salle === null) {
             http_response_code(404);
 
-            require dirname(__DIR__, 2) . '/templates/error/404.php';
+            $this->render('error/404');
 
             return;
         }
@@ -148,20 +166,24 @@ class SalleController
             $errors = $result->errors();
             $mode = 'edit';
 
-            require dirname(__DIR__, 2) . '/templates/salle/form.php';
+            $this->render('salle/form', [
+                'data' => $data,
+                'errors' => $errors,
+                'mode' => $mode,
+            ]);
 
             return;
         }
 
         $validatedData = $result->data();
 
-        $dto = new CreerSalleDTO(
-            $validatedData['nom'],
-            $validatedData['batiment'],
-            $validatedData['capacite'],
-            $validatedData['type'],
-            $validatedData['active']
-        );
+        $dto = CreerSalleDTO::builder()
+            ->nom($validatedData['nom'])
+            ->batiment($validatedData['batiment'])
+            ->capacite($validatedData['capacite'])
+            ->type($validatedData['type'])
+            ->active($validatedData['active'])
+            ->build();
 
         $salle->nom = $dto->getNom();
         $salle->batiment = $dto->getBatiment();
@@ -171,8 +193,20 @@ class SalleController
 
         $this->salleRepository->save($salle);
 
+        $_SESSION['success'] = 'La salle a été modifiée avec succès.';
+
         header('Location: /salles/' . $salle->id);
 
         exit;
+    }
+
+    private function render(string $view, array $data = []): void
+    {
+        extract($data);
+
+        require dirname(__DIR__, 2)
+            . '/templates/'
+            . $view
+            . '.php';
     }
 }

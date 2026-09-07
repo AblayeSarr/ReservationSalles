@@ -214,3 +214,128 @@ Le service peut être testé sans MySQL en utilisant des mocks ou des stubs à l
 Ces faux repositories permettent de simuler différentes situations : une salle inexistante, une salle inactive, un créneau déjà occupé ou encore une réservation valide.
 Cette méthode permet de tester uniquement la logique métier du service, sans dépendre d’une base de données réelle.
 Cela rend les tests plus rapides, plus simples et plus faciles à contrôler.
+
+
+# Étape 9 — Contrôleurs et vues
+
+## 1. Pourquoi utiliser des contrôleurs ?
+
+Les contrôleurs servent d'intermédiaires entre les requêtes HTTP et les différentes couches de l'application.
+Dans notre projet, les contrôleurs reçoivent les données provenant des formulaires, appellent les validateurs, construisent les DTO nécessaires, utilisent les services métier et redirigent l'utilisateur après une opération réussie.
+Ils ne doivent pas contenir directement les règles métier ni effectuer eux-mêmes les requêtes Eloquent.
+
+## 2. Quels contrôleurs ont été créés ?
+
+Deux contrôleurs principaux ont été créés :
+
+* `SalleController` pour gérer les salles ;
+* `ReservationController` pour gérer les réservations.
+
+### SalleController
+
+`SalleController` permet de :
+
+* afficher la liste des salles ;
+* afficher le détail d'une salle ;
+* afficher le formulaire de création ;
+* enregistrer une nouvelle salle ;
+* afficher le formulaire de modification ;
+* enregistrer une modification.
+
+### ReservationController
+
+`ReservationController` permet de :
+
+* afficher la liste des réservations ;
+* filtrer les réservations par salle ;
+* afficher le détail d'une réservation ;
+* afficher le formulaire de création ;
+* créer une réservation ;
+* annuler une réservation.
+
+## 3. Responsabilité de `store()`
+
+La méthode `store()` d'un contrôleur suit plusieurs étapes :
+
+1. récupérer les données HTTP ;
+2. transmettre ces données au validateur ;
+3. réafficher le formulaire si les données sont invalides ;
+4. transformer les données validées en DTO ;
+5. transmettre le DTO au service métier ;
+6. rediriger l'utilisateur après une création réussie.
+
+Cette organisation permet au contrôleur de rester centré sur la gestion HTTP et de laisser les règles métier au service.
+
+## 4. Pourquoi les contrôleurs n'utilisent-ils pas directement Eloquent ?
+
+Les contrôleurs ne doivent pas effectuer directement des requêtes comme :
+
+```php
+Salle::query()
+Reservation::where(...)
+$model->save()
+```
+
+L'accès aux données est isolé dans les repositories.
+
+Le contrôleur utilise donc les interfaces de repository et les services qui lui sont injectés. Cela permet de respecter la séparation des responsabilités et de réduire le couplage avec Eloquent.
+
+## 5. Les vues
+
+Les vues sont organisées dans le dossier `templates/`.
+
+### Vues des salles
+
+templates/salle/
+├── index.php
+├── show.php
+└── form.php
+
+### Vues des réservations
+
+templates/reservation/
+├── index.php
+├── show.php
+└── form.php
+
+### Vues d'erreur
+
+templates/error/
+├── 404.php
+├── 405.php
+└── 500.php
+
+Les vues utilisent également un layout commun :
+templates/layout/base.php
+
+## 6. Contraintes appliquées aux vues
+
+Les vues ne doivent :
+
+* ni appeler Eloquent ;
+* ni accéder au conteneur d'injection ;
+* ni contenir de règles métier.
+
+Toutes les données dynamiques affichées sont échappées afin d'éviter l'injection de contenu HTML ou JavaScript.
+Après une requête POST réussie, le contrôleur effectue une redirection afin d'éviter de resoumettre le formulaire lors d'un rafraîchissement de la page.
+
+## 7. Séparation des responsabilités
+L'organisation obtenue est donc :
+
+Requête HTTP
+     ↓
+Contrôleur
+     ↓
+Validateur
+     ↓
+DTO
+     ↓
+Service métier
+     ↓
+Repository
+     ↓
+Eloquent
+     ↓
+Base de données
+
+Cette séparation permet de maintenir une architecture claire et de tester les différentes parties de l'application indépendamment.

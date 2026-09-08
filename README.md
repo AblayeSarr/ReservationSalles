@@ -1,341 +1,1358 @@
+# ReservationSalles
 
-## Réponses aux questions de l’Étape 1
+Application web PHP de gestion des réservations de salles universitaires.
 
-### 1. Quel est le rôle de Composer ?
+Le projet permet de gérer les salles disponibles dans une université ainsi que les réservations associées, tout en appliquant les règles métier nécessaires pour éviter les conflits de réservation.
 
-Composer est le gestionnaire de dépendances de PHP. Il permet d’installer les bibliothèques externes nécessaires au projet, de gérer leurs versions et leurs dépendances, et de générer un système d’autoloading permettant de charger automatiquement les classes PHP sans effectuer de nombreux `require` manuels.
+---
 
-### 2. Quelle différence existe entre `require` et `require-dev` ?
+# 1. Présentation du projet
 
-`require` contient les dépendances nécessaires au fonctionnement de l’application, notamment en production.
-`require-dev` contient les dépendances uniquement utiles au développement, par exemple PHPUnit pour effectuer les tests. Ces dépendances peuvent être exclues lors d'une installation destinée à la production avec `composer install --no-dev`.
+L'application permet de :
 
-### 3. Pourquoi faut-il versionner `composer.lock` ?
+* consulter les salles ;
+* consulter le détail d'une salle ;
+* créer une salle ;
+* modifier une salle ;
+* activer ou désactiver une salle ;
+* consulter les réservations ;
+* filtrer les réservations par salle ;
+* consulter le détail d'une réservation ;
+* créer une réservation ;
+* annuler une réservation ;
+* empêcher les réservations incompatibles avec les règles métier.
 
-`composer.lock` enregistre les versions exactes des dépendances installées ainsi que leurs dépendances. Le versionner permet à tous les environnements du projet d'utiliser les mêmes versions et garantit ainsi une installation reproductible.
+Le projet est réalisé en PHP orienté objet, sans framework complet.
 
-### 4. Pourquoi ne versionne-t-on pas `vendor/` ?
+Les composants utilisés sont :
 
-Le dossier `vendor/` contient les bibliothèques installées par Composer. Il peut contenir un grand nombre de fichiers et peut être entièrement reconstruit à partir de `composer.json` et surtout de `composer.lock` avec la commande `composer install`. Il n'est donc pas nécessaire de le versionner dans Git.
+* FastRoute pour le routage HTTP ;
+* Respect\Validation pour la validation ;
+* Eloquent ORM pour l'accès aux données ;
+* PHP-DI pour l'injection de dépendances ;
+* Dotenv pour la configuration de l'environnement ;
+* PHPUnit pour les tests.
 
+---
 
-# Étape 2 — Configurer Eloquent
-## Réponses aux 4 questions théoriques
+# 2. Prérequis
 
-### Question 1 — Quel rôle joue `Capsule\Manager` ?
-`Capsule\Manager` est le composant qui permet d'utiliser **Eloquent ORM en dehors du framework Laravel**.
+Pour installer et exécuter le projet, il faut disposer de :
 
-Il sert à configurer et initialiser Eloquent : il reçoit les paramètres de connexion à la base de données, initialise les différents composants nécessaires et permet aux modèles Eloquent de fonctionner de manière autonome.
+* PHP 8.2 ou supérieur ;
+* Composer ;
+* MySQL 8 ou supérieur ;
+* Git ;
+* l'extension PHP PDO MySQL ;
+* l'extension PHP mbstring ;
+* l'extension PHP XML, nécessaire notamment pour PHPUnit.
 
-### Question 2 — Pourquoi Eloquent peut-il fonctionner sans Laravel ?
-Eloquent peut fonctionner sans Laravel parce qu'il est disponible sous forme de composants découplés, notamment avec le package `illuminate/database`.
-Laravel utilise ces composants, mais Eloquent n'a pas besoin de tout le framework pour fonctionner.
-En configurant manuellement la connexion à la base de données et en utilisant `Capsule\Manager` pour initialiser Eloquent, on peut utiliser l'ORM sans avoir besoin des autres composants de Laravel comme les routes, les vues ou les middlewares.
+Vérifier PHP :
 
-### Question 3 — Où doit se trouver le démarrage de l'ORM ?
-Le démarrage de l'ORM doit être effectué **une seule fois**, dans la partie infrastructure de l'application.
-Dans notre projet, cette initialisation se trouve dans :
+```bash
+php -v
+```
 
+Vérifier Composer :
+
+```bash
+composer --version
+```
+
+Vérifier Git :
+
+```bash
+git --version
+```
+
+Vérifier MySQL :
+
+```bash
+mysql --version
+```
+
+---
+
+# 3. Récupération du projet
+
+Cloner le dépôt :
+
+```bash
+git clone https://github.com/AblayeSarr/ReservationSalles.git
+```
+
+Entrer dans le projet :
+
+```bash
+cd ReservationSalles
+```
+
+---
+
+# 4. Installation des dépendances
+
+Installer les dépendances définies dans `composer.lock` :
+
+```bash
+composer install
+```
+
+Cette commande installe notamment :
+
+* `nikic/fast-route`
+* `respect/validation`
+* `illuminate/database`
+* `php-di/php-di`
+* `vlucas/phpdotenv`
+
+Les dépendances de développement, notamment PHPUnit, sont également installées.
+
+Le dossier `vendor/` est généré automatiquement par Composer et n'est pas versionné.
+
+---
+
+# 5. Configuration de l'environnement
+
+Copier le fichier d'exemple :
+
+```bash
+cp .env.example .env
+```
+
+Puis modifier `.env` avec les paramètres correspondant à votre installation MySQL.
+
+Exemple :
+
+```env
+APP_ENV=development
+APP_DEBUG=true
+DB_DRIVER=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=reservation_salles
+DB_USERNAME=reservebd
+DB_PASSWORD=votre_mot_de_passe
+```
+
+Le fichier `.env` contient les informations propres à l'environnement local et ne doit pas être versionné.
+
+Le fichier `.env.example` constitue uniquement un modèle de configuration et ne doit contenir aucun secret.
+
+---
+
+# 6. Création de la base de données
+
+Créer la base de données MySQL :
+
+```sql
+CREATE DATABASE reservation_salles
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+```
+
+Créer ensuite l'utilisateur si nécessaire :
+
+```sql
+CREATE USER 'reservebd'@'localhost' IDENTIFIED BY 'votre_mot_de_passe';
+```
+
+Accorder les droits :
+
+```sql
+GRANT ALL PRIVILEGES ON reservation_salles.* TO 'reservebd'@'localhost';
+
+FLUSH PRIVILEGES;
+```
+
+La configuration réelle utilisée par l'application est définie dans `.env`.
+
+---
+
+# 7. Configuration d'Eloquent
+
+L'initialisation d'Eloquent est centralisée dans :
+
+```text
 config/database.php
+```
 
-Ce fichier est responsable du chargement de la configuration et de l'initialisation d'Eloquent.
-Les classes métier ne doivent pas initialiser elles-mêmes la connexion à la base de données.
-Cette organisation permet de centraliser la configuration et d'éviter de répéter l'initialisation de l'ORM dans plusieurs classes.
+Ce fichier :
 
-### Question 4 — Quelle différence existe entre ORM et SQL écrit à la main ?
+1. charge les variables d'environnement ;
+2. configure la connexion MySQL ;
+3. initialise `Capsule\Manager` ;
+4. configure Eloquent ;
+5. rend Eloquent disponible pour les modèles.
 
-**SQL écrit à la main**
+L'ORM est initialisé une seule fois dans la partie infrastructure de l'application.
 
-* **Syntaxe :** les requêtes sont écrites directement en SQL.
-* **Abstraction :** faible, car le code est directement lié au langage SQL et au SGBD.
-* **Maintenabilité :** peut devenir difficile lorsque le nombre de requêtes augmente.
-* **Sécurité :** il faut gérer correctement les paramètres et utiliser des requêtes préparées pour éviter les injections SQL.
-* **Performance :** permet un contrôle direct et précis des requêtes SQL.
-* **Lisibilité :** le SQL permet de voir directement les opérations effectuées sur la base de données.
+Les classes métier n'ont pas à créer elles-mêmes la connexion à la base de données.
 
-**ORM avec Eloquent**
+---
 
-* **Syntaxe :** les données sont manipulées avec des méthodes et des objets PHP.
-* **Abstraction :** plus forte, car l'application manipule des modèles plutôt que des requêtes SQL directement.
-* **Maintenabilité :** facilite l'organisation et la maintenance du code grâce aux modèles Eloquent.
-* **Sécurité :** facilite l'utilisation de requêtes paramétrées lorsqu'il est utilisé correctement.
-* **Performance :** ajoute une couche d'abstraction, mais propose des mécanismes permettant d'optimiser les accès aux données.
-* **Lisibilité :** le code est généralement plus proche du modèle métier de l'application.
+# 8. Création des tables
 
+Les migrations sont situées dans :
 
-## Étape 3 — Modèles Eloquent
+```text
+database/migrations/
+```
 
-### 1. Quel type de relation Eloquent existe entre Salle et Reservation ?
+Elles sont composées de :
 
-La relation entre `Salle` et `Reservation` est une relation **un-à-plusieurs**.
-Une salle peut avoir plusieurs réservations. Le modèle `Salle` possède donc plusieurs `Reservation`.
-À l'inverse, une réservation appartient à une seule salle.
-On utilise donc une relation `hasMany` du côté de `Salle` et une relation `belongsTo` du côté de `Reservation`.
+```text
+001_create_salles_table.php
+002_create_reservations_table.php
+```
 
-### 2. Pourquoi utiliser `$fillable` ou `$guarded` ?
+## Table `salles`
 
-`$fillable` et `$guarded` permettent de contrôler les attributs qui peuvent être remplis automatiquement lors d'une affectation de masse.
-Cela permet d'éviter qu'un utilisateur puisse modifier certains champs sensibles ou techniques du modèle.
-Dans notre projet, nous avons choisi `$fillable` afin de définir explicitement les champs que nous autorisons à être remplis.
+La table contient notamment :
 
-### 3. Pourquoi caster `active` en booléen ?
+* `id`
+* `nom`
+* `batiment`
+* `capacite`
+* `type`
+* `active`
+* `created_at`
+* `updated_at`
 
-La colonne `active` indique si une salle est active ou non. Elle représente donc une valeur vrai/faux.
-Le cast en booléen permet à Eloquent de convertir automatiquement la valeur provenant de la base de données en un véritable booléen PHP.
-Cela rend la manipulation de cette donnée plus cohérente avec sa signification métier.
+Les types de salles prévus sont :
 
-### 4. Pourquoi convertir les dates en objets ?
+* `cours`
+* `informatique`
+* `laboratoire`
+* `amphitheatre`
+* `reunion`
 
-Les champs `date_debut` et `date_fin` représentent des dates et des heures.
-Les convertir en objets de date permet de les manipuler et de les comparer plus facilement qu'avec de simples chaînes de caractères.
-Cette conversion sera particulièrement utile pour appliquer les règles métier des réservations, notamment vérifier que la date de début est avant la date de fin, que la réservation commence dans le futur et qu'il n'existe pas de chevauchement avec une autre réservation.
+## Table `reservations`
 
+La table contient notamment :
 
-## Étape 4 — Questions théoriques
+* `id`
+* `salle_id`
+* `responsable`
+* `email`
+* `motif`
+* `date_debut`
+* `date_fin`
+* `statut`
+* `created_at`
+* `updated_at`
 
-### 1. Quelle différence entre une migration et un seeder ?
+La réservation possède une clé étrangère vers la salle.
 
-Une migration sert à créer ou modifier la **structure de la base de données** : tables, colonnes, clés étrangères, contraintes, etc.
-Un seeder sert à insérer des **données initiales** ou des données de démonstration dans les tables.
-Dans ce projet, les migrations créent les tables `salles` et `reservations`, tandis que `database/seed.php` ajoute les salles initiales.
+---
 
-### 2. Pourquoi les données initiales doivent-elles être reproductibles ?
+# 9. Exécution des migrations
 
-Les données initiales doivent être reproductibles afin de pouvoir exécuter le script plusieurs fois, notamment lors de l'installation ou du développement, sans provoquer d'erreurs ni créer plusieurs fois les mêmes données.
-Un seed reproductible permet donc de retrouver un état initial cohérent de la base de données.
+Les migrations de ce projet sont des scripts PHP.
 
-### 3. Comment éviter les doublons ?
+Depuis la racine du projet, elles peuvent être exécutées avec PHP après avoir vérifié la configuration de la base de données.
 
-Avant de créer une salle, le script vérifie si une salle ayant déjà le même **nom et le même bâtiment** existe.
-Si elle existe, le script ne la crée pas. Sinon, il l'ajoute à la base de données.
-Cette vérification permet d'exécuter plusieurs fois `database/seed.php` sans créer de doublons.
+Les scripts doivent être exécutés dans l'ordre :
 
+```bash
+php database/migrations/001_create_salles_table.php
 
-## Étape 5 — Validation
+php database/migrations/002_create_reservations_table.php
+```
 
-### 1. Pourquoi valider les données avant de les utiliser ?
+Après leur exécution, vérifier les tables :
 
-La validation permet de vérifier que les données reçues respectent les règles attendues avant de les utiliser dans l'application.
-Elle permet d'éviter les données invalides, incomplètes ou mal typées et de réduire les risques d'erreurs lors du traitement ou de l'enregistrement en base de données.
+```sql
+USE reservation_salles;
 
-### 2. Pourquoi utiliser Respect\Validation ?
+SHOW TABLES;
+```
 
-Respect\Validation fournit des règles de validation déjà prêtes à l'emploi.
-Cela évite de réécrire manuellement les mêmes contrôles et permet d'avoir une validation plus claire, centralisée et facilement maintenable.
+Les tables attendues sont :
 
-### 3. Pourquoi ne pas mettre toute la validation dans le contrôleur ?
+```text
+salles
+reservations
+```
 
-Mettre toute la validation dans le contrôleur rendrait celui-ci trop volumineux et mélangerait plusieurs responsabilités.
-Une classe dédiée comme `SalleValidator` ou `ReservationValidator` permet de séparer la validation du traitement HTTP et de rendre le code plus facile à tester et à maintenir.
+---
 
-### 4. Quelle différence existe entre validation et règle métier ?
+# 10. Ajout des données initiales
 
-La validation vérifie principalement que les données reçues respectent un format ou une contrainte attendue.
-Une règle métier concerne le comportement fonctionnel de l'application.
-Par exemple, vérifier qu'un email est valide relève de la validation, tandis que vérifier qu'une salle n'est pas déjà réservée sur le même créneau relève d'une règle métier.
+Le script de données initiales se trouve ici :
 
-## Étape 6 — DTO
+```text
+database/seed.php
+```
 
-### 1. Quelle différence existe entre un DTO et un modèle Eloquent ?
+Il permet d'ajouter les salles initiales du projet.
 
-Un DTO (Data Transfer Object) sert à transporter des données structurées entre différentes couches de l'application.
-Un modèle Eloquent représente une donnée persistée en base de données et permet également d'utiliser les fonctionnalités de l'ORM.
-Le DTO sert donc au transport des données, tandis que le modèle Eloquent sert notamment à représenter et manipuler les données persistées.
+Les données initiales comprennent notamment :
 
-### 2. Pourquoi le DTO ne doit-il pas appeler `save()` ?
+| Salle                | Bâtiment   | Capacité | Type         |
+| -------------------- | ---------- | -------: | ------------ |
+| Amphithéâtre A       | Bâtiment A |      250 | amphitheatre |
+| Salle B12            | Bâtiment B |       40 | cours        |
+| Laboratoire Chimie   | Bâtiment C |       24 | laboratoire  |
+| Salle Informatique 1 | Bâtiment D |       30 | informatique |
+| Salle de réunion     | Bâtiment E |       12 | reunion      |
 
-Le DTO ne doit pas appeler `save()` car il ne doit pas connaître la base de données ni la manière dont les données sont persistées.
-Son rôle est uniquement de transporter des données correctement typées.
-La responsabilité de l'enregistrement appartient au Repository.
+Le seed vérifie l'existence d'une salle avant de l'insérer afin d'éviter les doublons.
 
-### 3. À quel moment transforme-t-on les chaînes en dates ?
+Le script est donc reproductible.
 
-Les dates reçues depuis HTTP sont initialement des chaînes de caractères.
-Après leur validation, elles sont transformées en objets `DateTimeImmutable` lors de la création du DTO.
-Le reste de l'application peut ainsi manipuler directement des objets de date plutôt que des chaînes.
+Exécuter :
 
-### 4. Le DTO doit-il contenir la règle de chevauchement ?
+```bash
+php database/seed.php
+```
 
-Non.
-Le chevauchement est une règle métier concernant les réservations.
-Le DTO doit uniquement transporter les données nécessaires à la réservation. La vérification du chevauchement appartient au service métier.
+---
 
-## Étape 7 — Repository
+# 11. Lancement de l'application
 
-### 1. Eloquent constitue-t-il déjà un accès aux données ?
+Le point d'entrée HTTP unique de l'application est :
 
-Oui.
-Eloquent fournit déjà des fonctionnalités permettant de rechercher, créer, modifier et supprimer des données en base de données.
-Les modèles Eloquent constituent donc déjà une forme d'accès aux données.
+```text
+public/index.php
+```
 
-### 2. Pourquoi ajouter un Repository au-dessus d'Eloquent ?
+Lancer le serveur PHP intégré depuis la racine du projet :
 
-Le Repository permet d'isoler l'accès aux données du reste de l'application.
-Les contrôleurs et les services n'ont ainsi pas besoin de connaître directement les requêtes Eloquent utilisées pour récupérer ou modifier les données.
-Cela permet également de centraliser les requêtes liées à une même entité.
+```bash
+php -S localhost:8000 -t public
+```
 
-### 3. Cette abstraction est-elle toujours nécessaire ?
+Puis ouvrir :
 
-Non.
-Pour une petite application très simple, utiliser directement Eloquent peut être suffisant.
-Dans notre projet, cette abstraction est cependant pertinente car l'architecture demandée impose une séparation entre la logique métier et l'accès aux données.
+```text
+http://localhost:8000
+```
 
-### 4. Quel avantage apporte-t-elle ?
+L'application utilise `public/index.php` comme Front Controller.
 
-Le Repository réduit le couplage entre l'application et Eloquent.
-Grâce aux interfaces `SalleRepositoryInterface` et `ReservationRepositoryInterface`, les services peuvent dépendre d'un contrat plutôt que d'une implémentation précise.
-Cela facilite également les tests, car on peut remplacer le Repository réel par une implémentation en mémoire ou un double de test.
+Les requêtes sont ensuite transmises au routeur FastRoute puis au contrôleur approprié.
 
+---
 
-# Étape 8 — Questions
+# 12. Routage
 
-## 1. Pourquoi ces règles ne sont-elles pas dans le contrôleur ?
+Les routes sont définies dans :
 
-Les règles métier ne sont pas placées dans le contrôleur car le contrôleur doit principalement gérer les requêtes HTTP et transmettre les données au service.
-Les règles métier sont placées dans le service afin de centraliser la logique de l’application, éviter les répétitions et faciliter la maintenance et les tests.
-Cette séparation permet également de respecter le principe de responsabilité unique.
+```text
+routes/web.php
+```
 
-## 2. Pourquoi le service dépend-il d’une interface de Repository ?
+Principales routes :
 
-Le service dépend d’une interface de Repository afin de ne pas être directement lié à une technologie ou à une implémentation particulière.
-Cette approche permet de séparer la logique métier de l’accès aux données.
-Elle facilite également les tests, car le Repository réel peut être remplacé par un faux Repository lors des tests.
-Cette organisation respecte notamment le principe d’inversion des dépendances de SOLID.
+```text
+GET  /
+GET  /salles
+GET  /salles/create
+POST /salles
+GET  /salles/{id}
+GET  /salles/{id}/edit
+POST /salles/{id}/edit
+GET  /reservations
+GET  /reservations/create
+POST /reservations
+GET  /reservations/{id}
+POST /reservations/{id}/cancel
+```
 
-## 3. Quelle exception doit être levée en cas de conflit ?
+FastRoute permet notamment de gérer :
 
-En cas de conflit de réservation, l’exception à lever est l’exception indiquant que la salle est indisponible.
-Elle permet de signaler clairement que la salle est déjà réservée sur le créneau demandé et qu’une nouvelle réservation ne peut donc pas être créée.
-Les réservations annulées ne doivent plus empêcher une nouvelle réservation.
+* les routes existantes ;
+* les paramètres dynamiques ;
+* les erreurs 404 ;
+* les méthodes HTTP non autorisées avec une réponse 405 ;
+* l'en-tête `Allow`.
 
-## 4. Comment tester le service sans MySQL ?
+---
 
-Le service peut être testé sans MySQL en utilisant des mocks ou des stubs à la place des véritables repositories.
-Ces faux repositories permettent de simuler différentes situations : une salle inexistante, une salle inactive, un créneau déjà occupé ou encore une réservation valide.
-Cette méthode permet de tester uniquement la logique métier du service, sans dépendre d’une base de données réelle.
-Cela rend les tests plus rapides, plus simples et plus faciles à contrôler.
+# 13. Validation
 
+La validation est séparée des contrôleurs.
 
-# Étape 9 — Contrôleurs et vues
+Les validateurs se trouvent dans :
 
-## 1. Pourquoi utiliser des contrôleurs ?
+```text
+src/Validation/
+```
 
-Les contrôleurs servent d'intermédiaires entre les requêtes HTTP et les différentes couches de l'application.
-Dans notre projet, les contrôleurs reçoivent les données provenant des formulaires, appellent les validateurs, construisent les DTO nécessaires, utilisent les services métier et redirigent l'utilisateur après une opération réussie.
-Ils ne doivent pas contenir directement les règles métier ni effectuer eux-mêmes les requêtes Eloquent.
+On trouve notamment :
 
-## 2. Quels contrôleurs ont été créés ?
+```text
+SalleValidator.php
+ReservationValidator.php
+ValidationResult.php
+ValidatorInterface.php
+```
 
-Deux contrôleurs principaux ont été créés :
+La bibliothèque Respect\Validation est utilisée pour appliquer les contraintes de validation.
 
-* `SalleController` pour gérer les salles ;
-* `ReservationController` pour gérer les réservations.
+Exemples de contrôles :
 
-### SalleController
+* email valide ;
+* responsable obligatoire ;
+* capacité positive ;
+* type de salle autorisé ;
+* motif suffisamment long ;
+* dates correctement renseignées.
 
-`SalleController` permet de :
+La validation est effectuée avant d'utiliser les données dans la logique métier.
 
-* afficher la liste des salles ;
+---
+
+# 14. DTO
+
+Les DTO se trouvent dans :
+
+```text
+src/DTO/
+```
+
+Les principaux DTO sont :
+
+```text
+CreerSalleDTO.php
+CreerSalleDTOBuilder.php
+CreerReservationDTO.php
+CreerReservationDTOBuilder.php
+```
+
+Un DTO sert à transporter des données structurées entre les différentes couches.
+
+Il ne contient pas la logique de persistance.
+
+Il ne doit notamment pas appeler :
+
+```php
+$model->save();
+```
+
+La persistance appartient aux repositories.
+
+Les dates validées sont transformées en objets `DateTimeImmutable` avant d'entrer dans la logique métier.
+
+---
+
+# 15. Modèles Eloquent
+
+Les modèles se trouvent dans :
+
+```text
+src/Model/
+```
+
+Ils sont composés de :
+
+```text
+Salle.php
+Reservation.php
+```
+
+La relation entre les deux modèles est une relation un-à-plusieurs.
+
+Une salle peut avoir plusieurs réservations.
+
+Une réservation appartient à une salle.
+
+Le modèle `Salle` utilise notamment le mécanisme de remplissage autorisé d'Eloquent avec les champs :
+
+```text
+nom
+batiment
+capacite
+type
+active
+```
+
+Le champ `active` est casté en booléen.
+
+Les champs de dates de `Reservation` sont castés en objets de date.
+
+---
+
+# 16. Repositories
+
+Les repositories sont situés dans :
+
+```text
+src/Repository/
+```
+
+Ils permettent d'isoler l'accès aux données.
+
+On trouve :
+
+```text
+SalleRepositoryInterface.php
+SalleRepository.php
+ReservationRepositoryInterface.php
+ReservationRepository.php
+```
+
+Les services dépendent des interfaces plutôt que directement des implémentations.
+
+Cela permet notamment :
+
+* de réduire le couplage ;
+* de centraliser les accès aux données ;
+* de remplacer les repositories par des faux objets pendant les tests ;
+* de mieux séparer la logique métier et la persistance.
+
+---
+
+# 17. Gestion des chevauchements
+
+Une réservation confirmée empêche une autre réservation de se placer sur un créneau qui la chevauche.
+
+La condition utilisée est :
+
+```text
+nouveau début < fin existante
+
+ET
+
+nouvelle fin > début existant
+```
+
+Sous forme logique :
+
+```text
+new_start < existing_end
+
+AND
+
+new_end > existing_start
+```
+
+Deux réservations voisines ne sont pas considérées comme conflictuelles.
+
+Par exemple :
+
+```text
+Réservation existante : 10h00 → 12h00
+
+Nouvelle réservation  : 12h00 → 14h00
+```
+
+Cette nouvelle réservation est autorisée.
+
+Les réservations annulées ne bloquent pas un créneau.
+
+---
+
+# 18. Services métier
+
+Les services se trouvent dans :
+
+```text
+src/Service/
+```
+
+Les principaux services sont :
+
+```text
+CreerReservationService.php
+AnnulerReservationService.php
+```
+
+Le service de création de réservation applique les règles métier avant de créer une réservation.
+
+Les règles principales sont :
+
+1. la salle doit exister ;
+2. la salle doit être active ;
+3. le responsable doit être renseigné ;
+4. l'adresse email doit être valide ;
+5. le motif doit contenir entre 5 et 255 caractères ;
+6. la date de début doit être avant la date de fin ;
+7. la réservation ne doit pas dépasser 4 heures ;
+8. la réservation doit commencer dans le futur ;
+9. aucune réservation confirmée ne doit chevaucher le créneau demandé.
+
+Les règles métier ne sont donc pas placées dans les contrôleurs.
+
+---
+
+# 19. Exceptions métier
+
+Les exceptions métier se trouvent dans :
+
+```text
+src/Exception/
+```
+
+Notamment :
+
+```text
+SalleIndisponibleException.php
+ReservationIntrouvableException.php
+```
+
+Elles permettent de représenter explicitement certaines situations métier.
+
+Par exemple, lorsqu'une salle est déjà réservée sur le créneau demandé, le service signale que la salle est indisponible.
+
+---
+
+# 20. Contrôleurs
+
+Les contrôleurs se trouvent dans :
+
+```text
+src/Controller/
+```
+
+Les contrôleurs principaux sont :
+
+```text
+HomeController.php
+SalleController.php
+ReservationController.php
+```
+
+## SalleController
+
+Il permet notamment de :
+
+* afficher les salles ;
 * afficher le détail d'une salle ;
 * afficher le formulaire de création ;
-* enregistrer une nouvelle salle ;
+* créer une salle ;
 * afficher le formulaire de modification ;
-* enregistrer une modification.
+* modifier une salle ;
+* gérer l'état actif/inactif de la salle.
 
-### ReservationController
+## ReservationController
 
-`ReservationController` permet de :
+Il permet notamment de :
 
-* afficher la liste des réservations ;
+* afficher les réservations ;
 * filtrer les réservations par salle ;
 * afficher le détail d'une réservation ;
 * afficher le formulaire de création ;
 * créer une réservation ;
 * annuler une réservation.
 
-## 3. Responsabilité de `store()`
+Les contrôleurs ne réalisent pas directement les requêtes métier complexes et ne contiennent pas les règles de chevauchement.
 
-La méthode `store()` d'un contrôleur suit plusieurs étapes :
+---
 
-1. récupérer les données HTTP ;
-2. transmettre ces données au validateur ;
-3. réafficher le formulaire si les données sont invalides ;
-4. transformer les données validées en DTO ;
-5. transmettre le DTO au service métier ;
-6. rediriger l'utilisateur après une création réussie.
+# 21. Vues
 
-Cette organisation permet au contrôleur de rester centré sur la gestion HTTP et de laisser les règles métier au service.
+Les vues sont situées dans :
 
-## 4. Pourquoi les contrôleurs n'utilisent-ils pas directement Eloquent ?
-
-Les contrôleurs ne doivent pas effectuer directement des requêtes comme :
-
-```php
-Salle::query()
-Reservation::where(...)
-$model->save()
+```text
+templates/
 ```
 
-L'accès aux données est isolé dans les repositories.
+Structure :
 
-Le contrôleur utilise donc les interfaces de repository et les services qui lui sont injectés. Cela permet de respecter la séparation des responsabilités et de réduire le couplage avec Eloquent.
+```text
+templates/
 
-## 5. Les vues
+├── error/
+│   ├── 404.php
+│   ├── 405.php
+│   └── 500.php
+│
+├── layout/
+│   └── base.php
+│
+├── reservation/
+│   ├── form.php
+│   ├── index.php
+│   └── show.php
+│
+├── salle/
+│   ├── form.php
+│   ├── index.php
+│   └── show.php
+│
+└── home.php
+```
 
-Les vues sont organisées dans le dossier `templates/`.
+Les vues :
 
-### Vues des salles
+* n'appellent pas directement Eloquent ;
+* n'accèdent pas au conteneur DI ;
+* ne contiennent pas les règles métier ;
+* échappent les données dynamiques affichées.
 
-templates/salle/
-├── index.php
-├── show.php
-└── form.php
+Un layout commun permet de centraliser la structure HTML et les messages de succès ou d'erreur.
 
-### Vues des réservations
+---
 
-templates/reservation/
-├── index.php
-├── show.php
-└── form.php
+# 22. Gestion des erreurs HTTP
 
-### Vues d'erreur
+L'application gère notamment :
 
-templates/error/
-├── 404.php
-├── 405.php
-└── 500.php
+## 404 — Page introuvable
 
-Les vues utilisent également un layout commun :
+Une route inconnue retourne :
+
+```text
+404
+```
+
+avec une vue dédiée :
+
+```text
+templates/error/404.php
+```
+
+## 405 — Méthode non autorisée
+
+Lorsqu'une route existe mais que la méthode HTTP utilisée n'est pas autorisée, l'application retourne :
+
+```text
+405
+```
+
+avec un en-tête :
+
+```text
+Allow
+```
+
+La vue correspondante est :
+
+```text
+templates/error/405.php
+```
+
+## 500 — Erreur interne
+
+Les exceptions non prévues sont interceptées par l'application et affichées via :
+
+```text
+templates/error/500.php
+```
+
+Cela permet d'éviter d'afficher directement une erreur technique à l'utilisateur.
+
+---
+
+# 23. Messages de succès et d'erreur
+
+Les messages temporaires sont stockés en session.
+
+Exemples :
+
+* salle créée avec succès ;
+* salle modifiée avec succès ;
+* réservation créée avec succès ;
+* réservation annulée avec succès ;
+* erreur lors d'une opération.
+
+Ils sont affichés dans le layout :
+
+```text
 templates/layout/base.php
+```
 
-## 6. Contraintes appliquées aux vues
+Les messages sont supprimés après leur affichage afin de fonctionner comme des messages flash.
 
-Les vues ne doivent :
+---
 
-* ni appeler Eloquent ;
-* ni accéder au conteneur d'injection ;
-* ni contenir de règles métier.
+# 24. Conteneur d'injection de dépendances
 
-Toutes les données dynamiques affichées sont échappées afin d'éviter l'injection de contenu HTML ou JavaScript.
-Après une requête POST réussie, le contrôleur effectue une redirection afin d'éviter de resoumettre le formulaire lors d'un rafraîchissement de la page.
+Le projet utilise PHP-DI.
 
-## 7. Séparation des responsabilités
-L'organisation obtenue est donc :
+La configuration se trouve dans :
 
-Requête HTTP
-     ↓
-Contrôleur
-     ↓
-Validateur
-     ↓
+```text
+config/container.php
+```
+
+Le conteneur est responsable notamment de construire :
+
+* les repositories ;
+* les validateurs ;
+* les services ;
+* les factories ;
+* les contrôleurs ;
+* l'application ;
+* le dispatcher FastRoute.
+
+Le point d'entrée :
+
+```text
+public/index.php
+```
+
+est la seule partie qui récupère directement l'application depuis le conteneur.
+
+Cette organisation permet de respecter l'injection des dépendances et l'inversion de contrôle.
+
+---
+
+# 25. Factory
+
+La création d'une réservation est également isolée dans une factory.
+
+Fichiers :
+
+```text
+src/Factory/ReservationFactoryInterface.php
+src/Factory/ReservationFactory.php
+```
+
+La factory transforme le DTO en modèle `Reservation`.
+
+Cela permet au service métier de se concentrer sur les règles métier plutôt que sur les détails de construction du modèle.
+
+---
+
+# 26. Tests
+
+Les tests utilisent PHPUnit.
+
+Ils sont organisés dans :
+
+```text
+tests/
+
+├── Integration/
+│   └── SalleIntegrationTest.php
+│
+└── Unit/
+    ├── CreerReservationServiceTest.php
+    ├── FakeReservationFactory.php
+    ├── FakeReservationRepository.php
+    ├── FakeSalleRepository.php
+    ├── ReservationValidatorTest.php
+    └── SalleValidatorTest.php
+```
+
+Lancer toute la suite :
+
+```bash
+vendor/bin/phpunit
+```
+
+Résultat attendu pour la version actuelle :
+
+```text
+OK (17 tests, 25 assertions)
+```
+
+Les tests unitaires du service utilisent des faux repositories afin de tester les règles métier sans dépendre d'une base MySQL réelle.
+
+Les tests couvrent notamment :
+
+* réservation valide ;
+* salle inexistante ;
+* salle inactive ;
+* date de fin avant la date de début ;
+* réservation de plus de quatre heures ;
+* réservation dans le passé ;
+* conflit de réservation ;
+* réservations adjacentes ;
+* validation d'email ;
+* responsable obligatoire ;
+* capacité invalide ;
+* type de salle inconnu ;
+* dates invalides ;
+* intégration avec Eloquent.
+
+---
+
+# 27. Scénarios fonctionnels principaux
+
+## Scénario 1 — Réservation valide
+
+Une réservation dans une salle active avec :
+
+* des dates valides ;
+* une durée inférieure ou égale à quatre heures ;
+* un responsable ;
+* un email valide ;
+* un motif valide ;
+
+doit être confirmée.
+
+## Scénario 2 — Chevauchement
+
+Une réservation existante :
+
+```text
+10h00 → 12h00
+```
+
+et une nouvelle demande :
+
+```text
+11h30 → 13h00
+```
+
+doivent provoquer un conflit.
+
+## Scénario 3 — Réservations voisines
+
+Une réservation existante :
+
+```text
+10h00 → 12h00
+```
+
+et une nouvelle demande :
+
+```text
+12h00 → 14h00
+```
+
+doivent être autorisées.
+
+## Scénario 4 — Salle inactive
+
+Une salle désactivée ne peut pas être réservée.
+
+## Scénario 5 — Durée excessive
+
+Une réservation :
+
+```text
+08h00 → 14h00
+```
+
+doit être refusée car elle dépasse quatre heures.
+
+## Scénario 6 — Formulaire invalide
+
+Des données invalides doivent :
+
+* empêcher l'insertion ;
+* afficher les erreurs ;
+* conserver les valeurs valides saisies.
+
+## Scénario 7 — URL inconnue
+
+```text
+GET /inconnue
+```
+
+doit retourner :
+
+```text
+404
+```
+
+## Scénario 8 — Méthode non autorisée
+
+```text
+DELETE /salles
+```
+
+doit retourner :
+
+```text
+405
+```
+
+avec l'en-tête `Allow`.
+
+---
+
+# 28. Architecture générale
+
+Le flux principal de l'application est :
+
+```text
+Navigateur
+
+    ↓
+
+public/index.php
+
+    ↓
+
+Application
+
+    ↓
+
+FastRoute
+
+    ↓
+
+Controller
+
+    ↓
+
+Validator
+
+    ↓
+
 DTO
-     ↓
-Service métier
-     ↓
-Repository
-     ↓
-Eloquent
-     ↓
-Base de données
 
-Cette séparation permet de maintenir une architecture claire et de tester les différentes parties de l'application indépendamment.
+    ↓
+
+Service
+
+    ↓
+
+Repository
+
+    ↓
+
+Eloquent
+
+    ↓
+
+MySQL
+```
+
+Les dépendances sont construites par PHP-DI.
+
+Cette séparation permet de distinguer :
+
+* le transport HTTP ;
+* la validation ;
+* le transport des données ;
+* la logique métier ;
+* l'accès aux données ;
+* la persistance.
+
+Une documentation détaillée des choix architecturaux est disponible dans :
+
+```text
+ARCHITECTURE.md
+```
+
+---
+
+# 29. Structure du projet
+
+```text
+ReservationSalles/
+
+│
+
+├── config/
+│   ├── container.php
+│   └── database.php
+│
+├── database/
+│   ├── migrations/
+│   │   ├── 001_create_salles_table.php
+│   │   └── 002_create_reservations_table.php
+│   └── seed.php
+│
+├── public/
+│   ├── assets/
+│   │   └── style.css
+│   └── index.php
+│
+├── routes/
+│   └── web.php
+│
+├── src/
+│   ├── Application.php
+│   │
+│   ├── Controller/
+│   │   ├── HomeController.php
+│   │   ├── ReservationController.php
+│   │   └── SalleController.php
+│   │
+│   ├── DTO/
+│   │   ├── CreerReservationDTO.php
+│   │   ├── CreerReservationDTOBuilder.php
+│   │   ├── CreerSalleDTO.php
+│   │   └── CreerSalleDTOBuilder.php
+│   │
+│   ├── Exception/
+│   │   ├── ReservationIntrouvableException.php
+│   │   └── SalleIndisponibleException.php
+│   │
+│   ├── Factory/
+│   │   ├── ReservationFactory.php
+│   │   └── ReservationFactoryInterface.php
+│   │
+│   ├── Model/
+│   │   ├── Reservation.php
+│   │   └── Salle.php
+│   │
+│   ├── Repository/
+│   │   ├── ReservationRepository.php
+│   │   ├── ReservationRepositoryInterface.php
+│   │   ├── SalleRepository.php
+│   │   └── SalleRepositoryInterface.php
+│   │
+│   ├── Service/
+│   │   ├── AnnulerReservationService.php
+│   │   └── CreerReservationService.php
+│   │
+│   └── Validation/
+│       ├── ReservationValidator.php
+│       ├── SalleValidator.php
+│       ├── ValidationResult.php
+│       └── ValidatorInterface.php
+│
+├── templates/
+│   ├── error/
+│   ├── layout/
+│   ├── reservation/
+│   ├── salle/
+│   └── home.php
+│
+├── tests/
+│   ├── Integration/
+│   └── Unit/
+│
+├── .env.example
+├── .gitignore
+├── ARCHITECTURE.md
+├── CHANGELOG.md
+├── composer.json
+├── composer.lock
+├── phpunit.xml
+├── QuestionsReponses.md
+└── README.md
+```
+
+---
+
+# 30. Commandes principales
+
+## Installer le projet
+
+```bash
+composer install
+```
+
+## Configurer l'environnement
+
+```bash
+cp .env.example .env
+```
+
+## Créer les tables
+
+```bash
+php database/migrations/001_create_salles_table.php
+
+php database/migrations/002_create_reservations_table.php
+```
+
+## Ajouter les données initiales
+
+```bash
+php database/seed.php
+```
+
+## Lancer le serveur
+
+```bash
+php -S localhost:8000 -t public
+```
+
+## Exécuter les tests
+
+```bash
+vendor/bin/phpunit
+```
+
+## Vérifier la syntaxe d'un fichier PHP
+
+```bash
+php -l chemin/vers/fichier.php
+```
+
+---
+
+# 31. Git et versionnement
+
+Le projet est développé progressivement avec des branches dédiées aux différentes étapes.
+
+Exemples :
+
+```text
+feature/01-composer
+
+feature/02-eloquent
+
+feature/03-modeles
+
+feature/04-donnees-initiales
+
+feature/05-routage
+
+feature/06-dto
+
+feature/07-repositories
+
+feature/08-services
+
+feature/09-interface-web
+
+feature/10-router
+
+feature/11-container
+
+feature/12-tests
+```
+
+Les versions intermédiaires sont matérialisées par des tags :
+
+```text
+v0.0.0
+v0.1.0
+v0.2.0
+v0.3.0
+v0.4.0
+v0.5.0
+v0.6.0
+v0.7.0
+v0.8.0
+v0.9.0
+v0.10.0
+v0.11.0
+v0.12.0
+```
+
+La version finale sera publiée après validation complète sous la forme :
+
+```text
+release/1.0.0
+```
+
+avec le tag :
+
+```text
+v1.0.0
+```
+
+---
+
+# 32. Sécurité et bonnes pratiques
+
+Les principes suivants sont appliqués :
+
+* les secrets ne sont pas stockés dans Git ;
+* `.env` est ignoré ;
+* `.env.example` ne contient pas de secret réel ;
+* les dépendances sont versionnées via `composer.lock` ;
+* `vendor/` n'est pas versionné ;
+* les données utilisateur sont validées ;
+* les données affichées dans les vues sont échappées ;
+* les responsabilités sont séparées entre les différentes couches ;
+* les dépendances sont injectées par constructeur ;
+* les règles métier sont centralisées dans les services.
+
+---
+
+# 33. Objectifs pédagogiques
+
+Le projet permet de mettre en pratique :
+
+* PHP orienté objet ;
+* architecture MVC ;
+* Front Controller ;
+* routage avec FastRoute ;
+* validation avec Respect\Validation ;
+* DTO ;
+* Builder ;
+* ORM avec Eloquent ;
+* Active Record ;
+* Repository ;
+* Service métier ;
+* Factory ;
+* injection par constructeur ;
+* conteneur d'injection de dépendances ;
+* autowiring ;
+* inversion de contrôle ;
+* principes SOLID ;
+* tests unitaires ;
+* tests d'intégration ;
+* gestion des erreurs HTTP ;
+* Git et versionnement.
+
+---
+
+# 34. Documentation complémentaire
+
+Les choix architecturaux détaillés sont documentés dans :
+
+```text
+ARCHITECTURE.md
+```
+
+L'historique des évolutions du projet est disponible dans :
+
+```text
+CHANGELOG.md
+```
+
+Les questions et réponses pédagogiques relatives aux différentes étapes du projet sont disponibles dans :
+
+```text
+QuestionsReponses.md
+```
+
+Le diagramme de classes fait partie des livrables du projet et se trouve dans :
+
+```text
+docs/class-diagram.png
+docs/class-diagram.puml
+```
+
+---
+
+# 35. État actuel du projet
+
+La version actuelle contient :
+
+* configuration Composer ;
+* connexion MySQL avec Eloquent ;
+* migrations ;
+* données initiales ;
+* modèles Eloquent ;
+* routage FastRoute ;
+* validation ;
+* DTO ;
+* Builder ;
+* repositories ;
+* services métier ;
+* factory ;
+* contrôleurs ;
+* vues ;
+* gestion des erreurs 404/405/500 ;
+* messages flash ;
+* conteneur PHP-DI ;
+* tests unitaires ;
+* tests d'intégration ;
+* documentation d'architecture ;
+* diagramme de classes ;
+* documentation pédagogique ;
+* documentation des évolutions.
+
+Les vérifications finales réalisées comprennent notamment :
+
+* vérification du fonctionnement de l'application ;
+* vérification des règles de réservation ;
+* vérification de la gestion des salles actives et inactives ;
+* vérification des erreurs HTTP 404, 405 et 500 ;
+* vérification des messages de succès et d'erreur ;
+* vérification de la suite de tests ;
+* vérification de la syntaxe PHP ;
+* vérification de l'absence d'erreurs Git avec `git diff --check` ;
+* vérification de l'installation depuis un clone propre.
+
+La suite du versionnement final consiste à :
+
+1. effectuer la dernière revue des fichiers et de la documentation ;
+2. préparer la branche `release/1.0.0` ;
+3. effectuer le commit final ;
+4. créer le tag `v1.0.0`.
+
+---
+
+# 36. Auteur
+
+Projet réalisé individuellement par :
+
+**Ablaye Sarr**
+
+Projet universitaire — Gestion des réservations de salles universitaires.

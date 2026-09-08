@@ -1,128 +1,29 @@
 @startuml
 
-skinparam classAttributeIconSize 0
-
-package "Model" {
-
-class Model
-
 class Salle {
     - id : int
     - nom : string
+    - batiment : string
     - capacite : int
+    - type : string
+    - active : bool
+    - created_at : DateTime
+    - updated_at : DateTime
 }
 
 class Reservation {
     - id : int
-    - salle : Salle
-    - nomUtilisateur : string
-    - dateDebut : DateTime
-    - dateFin : DateTime
+    - salle_id : int
+    - responsable : string
+    - email : string
+    - motif : string
+    - date_debut : DateTime
+    - date_fin : DateTime
+    - statut : string
+    - created_at : DateTime
+    - updated_at : DateTime
 }
 
-Salle --|> Model
-Reservation --|> Model
-Reservation --> Salle
-
-}
-
-package "DTO" {
-
-class CreerSalleDTO
-class CreerSalleDTOBuilder
-class CreerReservationDTO
-class CreerReservationDTOBuilder
-
-CreerSalleDTOBuilder --> CreerSalleDTO
-CreerReservationDTOBuilder --> CreerReservationDTO
-
-}
-
-package "Validation" {
-
-interface ValidatorInterface
-
-class SalleValidator
-class ReservationValidator
-class ValidationResult
-
-SalleValidator ..|> ValidatorInterface
-ReservationValidator ..|> ValidatorInterface
-
-}
-
-package "Repository" {
-
-interface SalleRepositoryInterface
-class SalleRepository
-
-interface ReservationRepositoryInterface
-class ReservationRepository
-
-SalleRepository ..|> SalleRepositoryInterface
-ReservationRepository ..|> ReservationRepositoryInterface
-
-SalleRepositoryInterface --> Salle
-ReservationRepositoryInterface --> Reservation
-
-}
-
-package "Factory" {
-
-interface ReservationFactoryInterface
-class ReservationFactory
-
-ReservationFactory ..|> ReservationFactoryInterface
-ReservationFactory --> Reservation
-
-}
-
-package "Service" {
-
-class ReservationService
-class CreerReservationService
-class AnnulerReservationService
-
-ReservationService --> ReservationValidator
-ReservationService --> ReservationRepository
-
-CreerReservationService --> SalleRepositoryInterface
-CreerReservationService --> ReservationRepositoryInterface
-CreerReservationService --> ReservationFactoryInterface
-
-AnnulerReservationService --> ReservationRepositoryInterface
-
-}
-
-package "Controller" {
-
-class HomeController
-class SalleController
-class ReservationController
-
-HomeController --> SalleRepositoryInterface
-HomeController --> ReservationRepositoryInterface
-
-SalleController --> SalleRepositoryInterface
-SalleController --> SalleValidator
-
-ReservationController --> ReservationRepositoryInterface
-ReservationController --> SalleRepositoryInterface
-ReservationController --> ReservationValidator
-ReservationController --> CreerReservationService
-ReservationController --> AnnulerReservationService
-
-}
-
-package "Exception" {
-
-class ReservationIntrouvableException
-class SalleIndisponibleException
-
-}
-
-ReservationService ..> ReservationIntrouvableException
-CreerReservationService ..> SalleIndisponibleException
-AnnulerReservationService ..> ReservationIntrouvableException
+Salle "1" -- "0..*" Reservation
 
 @enduml

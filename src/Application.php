@@ -32,7 +32,7 @@ class Application
 
             $message = 'La page demandée est introuvable.';
 
-            require dirname(__DIR__, 2)
+            require dirname(__DIR__)
                 . '/templates/error/404.php';
 
             return;
@@ -48,7 +48,7 @@ class Application
 
             $message = 'La méthode HTTP utilisée n\'est pas autorisée pour cette ressource.';
 
-            require dirname(__DIR__, 2)
+            require dirname(__DIR__)
                 . '/templates/error/405.php';
 
             return;
@@ -78,7 +78,6 @@ class Application
                 http_response_code(500);
 
                 $title = '500 — Erreur interne';
-
                 $message = 'Une erreur interne est survenue. Veuillez réessayer plus tard.';
 
                 require dirname(__DIR__)

@@ -10,6 +10,7 @@ use App\Repository\SalleRepositoryInterface;
 use App\Service\AnnulerReservationService;
 use App\Service\CreerReservationService;
 use App\Validation\ReservationValidator;
+use App\Response\ResponseStrategyInterface;
 
 class ReservationController
 {
@@ -18,13 +19,15 @@ class ReservationController
         private SalleRepositoryInterface $salleRepository,
         private ReservationValidator $reservationValidator,
         private CreerReservationService $creerReservationService,
-        private AnnulerReservationService $annulerReservationService
+        private AnnulerReservationService $annulerReservationService,
+        private ResponseStrategyInterface $responseStrategy
     ) {
     }
 
     public function index(): void
     {
         $reservations = $this->reservationRepository->findAll();
+
         $salles = $this->salleRepository->findAll();
 
         $salleFilter = null;
@@ -224,11 +227,6 @@ class ReservationController
 
     private function render(string $view, array $data = []): void
     {
-        extract($data);
-
-        require dirname(__DIR__, 2)
-            . '/templates/'
-            . $view
-            . '.php';
+        echo $this->responseStrategy->render($view, $data);
     }
 }

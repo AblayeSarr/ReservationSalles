@@ -6,12 +6,14 @@ use App\DTO\CreerSalleDTO;
 use App\Model\Salle;
 use App\Repository\SalleRepositoryInterface;
 use App\Validation\SalleValidator;
+use App\Response\ResponseStrategyInterface;
 
 class SalleController
 {
     public function __construct(
         private SalleRepositoryInterface $salleRepository,
-        private SalleValidator $salleValidator
+        private SalleValidator $salleValidator,
+        private ResponseStrategyInterface $responseStrategy
     ) {
     }
 
@@ -44,7 +46,9 @@ class SalleController
     public function create(): void
     {
         $data = [];
+
         $errors = [];
+
         $mode = 'create';
 
         $this->render('salle/form', [
@@ -70,6 +74,7 @@ class SalleController
 
         if (!$result->isValid()) {
             $errors = $result->errors();
+
             $mode = 'create';
 
             $this->render('salle/form', [
@@ -94,9 +99,13 @@ class SalleController
         $salle = new Salle();
 
         $salle->nom = $dto->getNom();
+
         $salle->batiment = $dto->getBatiment();
+
         $salle->capacite = $dto->getCapacite();
+
         $salle->type = $dto->getType();
+
         $salle->active = $dto->isActive();
 
         $salle = $this->salleRepository->save($salle);
@@ -129,6 +138,7 @@ class SalleController
         ];
 
         $errors = [];
+
         $mode = 'edit';
 
         $this->render('salle/form', [
@@ -164,6 +174,7 @@ class SalleController
 
         if (!$result->isValid()) {
             $errors = $result->errors();
+
             $mode = 'edit';
 
             $this->render('salle/form', [
@@ -186,9 +197,13 @@ class SalleController
             ->build();
 
         $salle->nom = $dto->getNom();
+
         $salle->batiment = $dto->getBatiment();
+
         $salle->capacite = $dto->getCapacite();
+
         $salle->type = $dto->getType();
+
         $salle->active = $dto->isActive();
 
         $this->salleRepository->save($salle);
@@ -202,11 +217,6 @@ class SalleController
 
     private function render(string $view, array $data = []): void
     {
-        extract($data);
-
-        require dirname(__DIR__, 2)
-            . '/templates/'
-            . $view
-            . '.php';
+        echo $this->responseStrategy->render($view, $data);
     }
 }

@@ -14,6 +14,5 @@ RUN composer install --no-interaction --prefer-dist
 
 COPY . .
 
-EXPOSE 8000
-
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+EXPOSE 10000
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-10000} -t public"]
